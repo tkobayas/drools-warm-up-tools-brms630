@@ -99,10 +99,10 @@ public class WarmUpHelper {
      * @throws InstantiationException
      * @throws IllegalAccessException
      */
-    public void optimizeAlphaNodeConstraints(boolean forceMvelJit, boolean forceJVMJit) throws InstantiationException, IllegalAccessException {
+    public void optimizeAlphaNodeConstraints(boolean forceMvelJit, boolean forceJVMJit) {
 
         // direct Jitting Mvelconstraints of AlphaNode
-        logger.info("--- optimizeAlphaNodeConstraints started : forceJVMJit = " + forceJVMJit);
+        logger.info("--- optimizeAlphaNodeConstraints started : forceMvelJit = " + forceMvelJit + " , forceJVMJit = " + forceJVMJit);
         long start = System.currentTimeMillis();
 
         KieSession ksession = kbase.newKieSession();
@@ -114,12 +114,13 @@ public class WarmUpHelper {
             if (!(mvelConstraintInfo.getParent() instanceof AlphaNode)) {
                 continue;
             }
-            Class<?> factClass = ((ClassObjectType) mvelConstraintInfo.getOtn().getObjectType()).getClassType();
-            Object fact = factClass.newInstance();
-            DefaultFactHandle handle = new DefaultFactHandle(id++, fact);
-            MvelConstraintUtils.createMvelConditionEvaluator(mvelConstraint, (InternalWorkingMemory) ksession);
-            ConditionEvaluator conditionEvaluator = MvelConstraintUtils.getConditionEvaluator(mvelConstraint);
             try {
+                Class<?> factClass = ((ClassObjectType) mvelConstraintInfo.getOtn().getObjectType()).getClassType();
+                Object fact = factClass.newInstance();
+                DefaultFactHandle handle = new DefaultFactHandle(id++, fact);
+                MvelConstraintUtils.createMvelConditionEvaluator(mvelConstraint, (InternalWorkingMemory) ksession);
+                ConditionEvaluator conditionEvaluator = MvelConstraintUtils.getConditionEvaluator(mvelConstraint);
+                
                 conditionEvaluator.evaluate(handle, (InternalWorkingMemory) ksession, null);
                 
                 if (forceMvelJit) {

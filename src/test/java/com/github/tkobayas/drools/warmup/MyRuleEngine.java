@@ -24,19 +24,25 @@ public class MyRuleEngine {
     private KieContainer testKieContainer;
 
     private KieSession testKieSession;
+    
+    private String ruleFilePath;
+    
+    public MyRuleEngine(String ruleFilePath) {
+        this.ruleFilePath = ruleFilePath;
+    }
 
     public void init() {
 
         long initStart = System.currentTimeMillis();
 
-        testKieContainer = createKieContainer("src/test/resources/SpreadSheetTest_50_50_1000_rules.drl");
+        testKieContainer = createKieContainer(ruleFilePath);
 
         System.out.println("init() : " + (System.currentTimeMillis() - initStart) + "ms");
     }
 
-    public void warmUp() {
+    public void simpleWarmUp() {
 
-        long warmUpStart = System.currentTimeMillis();
+        long simpleWarmUpStart = System.currentTimeMillis();
 
         KieSession warmUpKieSession = testKieContainer.newKieSession();
         MyPojo myPojo = new MyPojo();
@@ -44,12 +50,23 @@ public class MyRuleEngine {
         warmUpKieSession.fireAllRules();
         warmUpKieSession.dispose();
 
-        //        KieBase kieBase = testKieContainer.getKieBase();        
-
-        System.out.println("warmUp() : " + (System.currentTimeMillis() - warmUpStart) + "ms");
+        System.out.println("simpleWarmUp() : " + (System.currentTimeMillis() - simpleWarmUpStart) + "ms");
     }
 
-    public void execTest() {
+    public void alphaWarmUp(boolean forceMvelJit, boolean forceJVMJit) {
+
+        long alphaWarmUpStart = System.currentTimeMillis();
+        
+        KieBase kieBase = testKieContainer.getKieBase();
+        WarmUpHelper helper = new WarmUpHelper();
+        helper.analyze(kieBase, false);
+        helper.optimizeAlphaNodeConstraints(forceMvelJit, forceJVMJit);
+
+        System.out.println("alphaWarmUp() : " + (System.currentTimeMillis() - alphaWarmUpStart) + "ms");
+    }
+
+    
+    public void execTest(Object fact) {
 
         long execTestStart = System.currentTimeMillis();
 
@@ -60,16 +77,11 @@ public class MyRuleEngine {
             setTestKieSession(testKieContainer.newKieSession());
         }
 
-        MyPojo myPojo = new MyPojo(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                2, 2, 2, 2, 2, 2, 2, 2, "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2",
-                "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2",
-                "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2", "aaa2");
-
         long actualWorkStart = System.currentTimeMillis();
 
-        getTestKieSession().insert(myPojo);
+        getTestKieSession().insert(fact);
         getTestKieSession().fireAllRules();
-        getTestKieSession().delete(getTestKieSession().getFactHandle(myPojo));
+        getTestKieSession().delete(getTestKieSession().getFactHandle(fact));
 
         System.out.println("  insert/fireAllRules/delete : " + (System.currentTimeMillis() - actualWorkStart) + "ms");
 
